@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:foreman/viewModel/group_adapter.dart';
 import 'package:foreman/views/home/group_workers.dart';
@@ -24,12 +26,20 @@ class _BodyPageState extends State<BodyPage> {
   late String formatedDate;
   late String formatedDay;
 
+  //typing text
+  final String _fullText = 'No groups created yet, press the button "Add Group" to add a worker group';
+  String _displayText = '';
+  int _currentIndex = 0;//index for the current character
+  Timer? _typingTimer;
+
+
   @override
   void initState() {
     formatedDate = DateFormat('MMMM d, yyyy').format(now);
     formatedDay = DateFormat('EEEE').format(now);
     groupsBox = Hive.box<Group>('groups');
     _loadGroups();
+    _startTyping();
     super.initState();
   }
 
@@ -44,6 +54,7 @@ class _BodyPageState extends State<BodyPage> {
   void dispose() {
     groupController.dispose();
     searchController.dispose();
+    _typingTimer!.cancel();
     super.dispose();
   }
 
@@ -122,6 +133,24 @@ class _BodyPageState extends State<BodyPage> {
         ),
       ),
     );
+  }
+
+  //typing timer
+  void _startTyping(){
+_typingTimer = Timer.periodic(Duration(milliseconds: 100),(timer){
+      if(_currentIndex < _fullText.length){
+        setState((){
+          _displayText += _fullText[_currentIndex];
+          _currentIndex++;
+    
+
+  });
+      }else{
+        timer.cancel();
+      }
+
+    });
+
   }
 
   Widget searchField() {
@@ -322,7 +351,7 @@ class _BodyPageState extends State<BodyPage> {
     if (groups.isEmpty) {
       return Center(
         child: Text(
-          'No groups created yet',
+          _displayText,
           style: reusableStyle1().copyWith(
             color: Colors.grey[600],
             fontStyle: FontStyle.italic,

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:foreman/models/worker_provider.dart';
 import 'package:foreman/viewModel/days.dart';
+import 'package:foreman/views/home/bottom_navigation.dart';
 import 'package:foreman/views/home/textStyle.dart';
 import'package:provider/provider.dart';
 
@@ -25,8 +28,18 @@ class _GroupMembersState extends State<GroupMembers> {
   List<String> employees = [];
   List<Map<String, dynamic>> filteredWorkers = [];
   bool isSearching = false;
-  
   final List<String> _payment = [];
+
+  final _fullText = 'No worker added under this group\nEnter worker name\nand set daily pay per worker';
+  String _displayText = '';
+  int _currentIndex = 0;
+  Timer? _typingTimer;
+
+  @override
+  void initState(){
+    _typeText();
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -34,7 +47,22 @@ class _GroupMembersState extends State<GroupMembers> {
     deductionsController.dispose();
     paymentController.dispose();
     searchController.dispose();
+    _typingTimer!.cancel();
     super.dispose();
+  }
+
+  //typing text
+  void _typeText(){
+    _typingTimer = Timer.periodic(Duration(milliseconds: 100), (timer){
+      if(_currentIndex < _fullText.length){
+        setState(() {
+          _displayText += _fullText[_currentIndex];
+          _currentIndex++;
+        });
+      }else{
+        timer.cancel();
+      }
+    });
   }
   
 
@@ -162,6 +190,7 @@ class _GroupMembersState extends State<GroupMembers> {
           ),
         ),
       ),
+      bottomNavigationBar: BottomBar(),
     );
     });
     
@@ -344,7 +373,7 @@ String getCurrentWeekRange() {
     if (workersToDisplay.isEmpty) {
       return Center(
         child: Text(
-          isSearching ? 'No workers found' : 'No Worker Added under this Group',
+          isSearching ? 'No workers found' : _displayText,
           style: TextStyle(color: Colors.grey[600], fontSize: 16),
         ),
       );

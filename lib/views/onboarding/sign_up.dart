@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foreman/models/signup_signin.dart';
 import 'package:foreman/views/home/textStyle.dart';
 import 'package:foreman/views/onboarding/sign_in.dart';
 
@@ -11,6 +12,7 @@ class SignUp extends StatelessWidget {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
+    final authService = AuthService();
 
     return Scaffold(
       body: SafeArea(
@@ -76,7 +78,18 @@ class SignUp extends StatelessWidget {
 
                             // Sign Up button
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () async{
+                                
+                                  await authService.createUser(
+                                  context: context, 
+                                  email: emailController.text, 
+                                  password: passwordController.text, 
+                                  confirmPassword: confirmPasswordController.text
+                                  );
+
+                                
+
+                              },
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(50),
                               ),

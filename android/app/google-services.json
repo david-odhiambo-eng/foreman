@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "419786576122",
+    "project_id": "foreman-b7d9e",
+    "storage_bucket": "foreman-b7d9e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:419786576122:android:8b1cda395e206880027943",
+        "android_client_info": {
+          "package_name": "com.example.foreman"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgK6kXBafmvd0l3NuOot4GR9AQfZNOxNI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

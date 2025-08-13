@@ -42,11 +42,7 @@ class _AppTopBarState extends State<AppTopBar> {
           ),
         ),
       ),
-      leading: IconButton(
-        onPressed: (){}, 
-        icon: const Icon(Icons.menu, color: Colors.black87),
-        iconSize: 28,
-      ),
+      
       actions: [
         IconButton(
           onPressed: (){}, 
@@ -63,6 +59,8 @@ class _AppTopBarState extends State<AppTopBar> {
       ),
     ));
   }
+
+  
 
   Widget _buildTabButton(String text) {
     return OutlinedButton(

@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:foreman/models/signup_signin.dart';
 import 'package:foreman/views/home/textStyle.dart';
 import 'package:foreman/views/onboarding/sign_up.dart';
 
 class Login extends StatelessWidget {
-  const Login({super.key});
+  Login({super.key});
+  final TextEditingController resetPasswordController = TextEditingController();
+  final authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
     final usernameController = TextEditingController();
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
+    
+    
     
 
     return Scaffold(
@@ -65,15 +71,35 @@ class Login extends StatelessWidget {
                               fillColor: Colors.black.withOpacity(0.7),
                               obscureText: true,
                             ),
-                            const SizedBox(height: 30),
+                            
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children:[
+                                TextButton(onPressed:(){
+                                  _resetPassword(context, resetPasswordController.text);
+                                },
+                                child:Text('Forgot Password?', style: reusableStyle(),),
+                                )
+                              ]
+                            ),
+                            
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () async{
+                                
+                                  await authService.signIn(
+                                    context: context, 
+                                    email: emailController.text, 
+                                    password:passwordController.text
+                                    );
+
+
+                              },
                               style: ElevatedButton.styleFrom(
                                 minimumSize: const Size.fromHeight(50),
                               ),
                               child: const Text('Sign In'),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 10),
                             TextButton(
                               onPressed: () {
                                 Navigator.push(context, MaterialPageRoute(
@@ -87,6 +113,11 @@ class Login extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            
+                            Text('OR', style:reusableStyle2(),),
+                            _googleButton(context)
+
+
                           ],
                         ),
                       ),
@@ -99,6 +130,23 @@ class Login extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _googleButton(BuildContext context){
+    return ElevatedButton(onPressed: ()async{
+      await authService.signInWithGoogle(context);
+    }, 
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.blue,
+      foregroundColor: Colors.white
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Icon(FontAwesomeIcons.google),
+        Text('Sign In With Google')
+      ],
+    ));
   }
 
   Widget _buildTextField({
@@ -129,4 +177,48 @@ class Login extends StatelessWidget {
       ),
     );
   }
-}
+  //reseting password
+  Future _resetPassword(BuildContext context, String email)async{
+    return showDialog(context: context, 
+    builder: (_) => AlertDialog(
+      title: Text('Please provide your spam email, we\'ll send password resets instructions'),
+      actions: [
+        Column(
+          children: [
+            TextField(
+              controller: resetPasswordController,
+              decoration: InputDecoration(
+                hintText: 'Enter your email',
+                hintStyle: reusableStyle1(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12)
+                )
+              ),
+            ),
+            SizedBox(height: 10,),
+            Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            ElevatedButton(onPressed: (){
+              Navigator.pop(context);
+            }, 
+            child: Text('Cancel')),
+            SizedBox(width: 10,),
+            ElevatedButton(onPressed: ()async{
+              await authService.resetPassword(context, resetPasswordController.text);
+              Navigator.pop(context);
+            }, 
+            style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue
+            ),
+            child: Text('Send')),
+          ],),
+          ],
+        )
+      ],
+    ));
+  }
+}  
+            
+
+        
