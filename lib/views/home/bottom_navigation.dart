@@ -1,44 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:foreman/views/calculator/calculator_page.dart';
+import 'package:foreman/views/home/home_page.dart';
+import 'package:foreman/views/jobs/post_jobs.dart';
+
 
 class BottomBar extends StatefulWidget {
-  const BottomBar({super.key});
+  final int currentIndex;
+  const BottomBar({super.key, required this.currentIndex});
 
   @override
   State<BottomBar> createState() => _BottomBarState();
 }
 
 class _BottomBarState extends State<BottomBar> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.currentIndex;
+  }
 
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return; // avoid reloading same page
+
     setState(() {
       _selectedIndex = index;
     });
 
-    switch(index){
+    switch (index) {
       case 0:
-      //Navigation
-      break;
-
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Home()),
+        );
+        break;
       case 1:
-      //Navigation
-      break;
-
+        // Navigation to Jobs page
+        break;
       case 2:
-      //Naigation
-      break;
-
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const PostJob()),
+        );
+        break;
       case 3:
-      //Navigation
-      break;
-
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Calculator()),
+        );
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(12.0), // margin around the bar
+      padding: const EdgeInsets.all(12.0),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -66,7 +85,7 @@ class _BottomBarState extends State<BottomBar> {
               _buildBarItem(Icons.home, "Home", 0),
               _buildBarItem(Icons.work, "Jobs", 1),
               _buildBarItem(Icons.add_circle_outline, "Post Job", 2),
-              _buildBarItem(Icons.person, "Profile", 3),
+              _buildBarItem(FontAwesomeIcons.calculator, "Calculator", 3),
             ],
           ),
         ),

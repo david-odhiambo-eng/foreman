@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:foreman/models/worker_provider.dart';
-import 'package:foreman/viewModel/days.dart';
+import 'package:foreman/viewModel/data_structure.dart';
 import 'package:foreman/views/home/bottom_navigation.dart';
 import 'package:foreman/views/home/textStyle.dart';
 import'package:provider/provider.dart';
@@ -190,7 +190,7 @@ class _GroupMembersState extends State<GroupMembers> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomBar(),
+      bottomNavigationBar: BottomBar(currentIndex: 0,),
     );
     });
     
@@ -198,7 +198,7 @@ class _GroupMembersState extends State<GroupMembers> {
   //helper function for determining if a checkbox is clickable
   bool _isDayEnabled(String day, String currentDay) {
   // Get the index of the current day and the day in question
-  final daysOfWeek = DaysOfTheWeek.days;
+  final daysOfWeek = DataStructure.days;
   final currentDayIndex = daysOfWeek.indexOf(currentDay);
   final dayIndex = daysOfWeek.indexOf(day);
   
@@ -403,7 +403,7 @@ String getCurrentWeekRange() {
                 ),
                 const SizedBox(height: 10),
                 Wrap(
-                  children: DaysOfTheWeek.days.map((day) {
+                  children: DataStructure.days.map((day) {
                     bool isSelected = worker['selectedDays'].contains(day);
                     bool isEnabled = _isDayEnabled(day, widget.date);
                     return Padding(

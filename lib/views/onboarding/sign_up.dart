@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:foreman/models/signup_signin.dart';
 import 'package:foreman/views/home/textStyle.dart';
 import 'package:foreman/views/onboarding/sign_in.dart';
 
 class SignUp extends StatelessWidget {
-  const SignUp({super.key});
+  SignUp({super.key});
+  final authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +14,7 @@ class SignUp extends StatelessWidget {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
-    final authService = AuthService();
+    
 
     return Scaffold(
       body: SafeArea(
@@ -111,10 +113,13 @@ class SignUp extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            Center(child: Text('OR', style: reusableStyle2(),),),
+                            _googleButton(context)
                           ],
                         ),
                       ),
                     ),
+                    
                   ],
                 ),
               ),
@@ -152,5 +157,22 @@ class SignUp extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _googleButton(BuildContext context){
+    return ElevatedButton(onPressed: ()async{
+      await authService.signInWithGoogle(context);
+    }, 
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.blue,
+      foregroundColor: Colors.white
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Icon(FontAwesomeIcons.google),
+        Text('Sign In With Google')
+      ],
+    ));
   }
 }

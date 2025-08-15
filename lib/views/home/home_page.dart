@@ -3,6 +3,7 @@ import 'package:foreman/views/home/app_bar.dart';
 import 'package:foreman/views/home/body_page.dart';
 import 'package:foreman/views/home/bottom_navigation.dart';
 import 'package:foreman/views/onboarding/sign_in.dart'; // For logout navigation
+import 'package:foreman/models/signup_signin.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -12,6 +13,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final _authService = AuthService();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -109,7 +111,7 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomBar(),
+      bottomNavigationBar: BottomBar(currentIndex: 0,),
     );
   }
 
@@ -127,11 +129,8 @@ class _HomeState extends State<Home> {
             }, 
             child: Text('Cancel')),
             SizedBox(width: 10,),
-            ElevatedButton(onPressed: (){
-              Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => Login()),
-                      );
+            ElevatedButton(onPressed: ()async{
+              await _authService.logout(context);
             }, 
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
