@@ -1,4 +1,6 @@
-class DataStructure{
+
+
+class DataStructure {
   static List<String> days = [
     'Monday',
     'Tuesday',
@@ -32,5 +34,14 @@ class DataStructure{
 
   static List<String> symbolButtons = [
     '÷', '×', '-', '+', '=', '.'
+  ];
+
+  // New layout in the order 
+  static List<String> buttonsLayout = [
+    'AC', 'Del', '%', '÷',
+    '7', '8', '9', '×',
+    '4', '5', '6', '-',
+    '1', '2', '3', '+',
+    '0', '.', '='
   ];
 }

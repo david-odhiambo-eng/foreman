@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:foreman/firebase_options.dart';
 import 'package:foreman/models/worker_provider.dart';
 import 'package:foreman/viewModel/group_adapter.dart';
-import 'package:foreman/viewModel/worker_adapter.dart';
+
 import 'package:foreman/views/onboarding/sign_in.dart';
 import 'package:foreman/views/onboarding/splash_screen.dart';
 import 'package:provider/provider.dart';
@@ -19,8 +19,7 @@ Future<void> main() async {
   Hive.registerAdapter(GroupAdapter());
   await Hive.openBox<Group>('groups');
 
-  Hive.registerAdapter(WorkerAdapter());
-  await Hive.openBox<Worker>('workers');
+  
   
   runApp(const Foreman());
 }
@@ -72,3 +71,4 @@ class AuthWrapper extends StatelessWidget {
     );
   }
 }
+

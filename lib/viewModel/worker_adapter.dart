@@ -1,76 +1,59 @@
-
-
 import 'package:hive/hive.dart';
 
 part 'worker_adapter.g.dart';
 
-
-
-
-
-@HiveType(typeId: 1)
-class Worker {
+@HiveType(typeId: 0)
+class WorkerModel extends HiveObject {
   @HiveField(0)
   final String name;
   
   @HiveField(1)
-  final String groupName;
+  String deductions;
   
   @HiveField(2)
-  final String deductions;
+  List<String> selectedDays;
   
   @HiveField(3)
-  final List<String> selectedDays;
+  String earnings;
   
   @HiveField(4)
-  final String earnings;
+  String total;
   
   @HiveField(5)
-  final String total;
-  
-  @HiveField(6)
-  final String weekRange;
+  String weekRange;
 
-  @HiveField(7)  
-  final String dailyPay;
-
-  @HiveField(8)  
-  final int workerCount;
-
-  Worker({
+  WorkerModel({
     required this.name,
-    required this.groupName,
     this.deductions = '0',
     this.selectedDays = const [],
     this.earnings = '0',
     this.total = '0',
     required this.weekRange,
-    this.dailyPay = '0',
-    this.workerCount = 0,
   });
+}
 
-  // Added copyWith method
-  Worker copyWith({
-    String? name,
-    String? groupName,
-    String? deductions,
-    List<String>? selectedDays,
-    String? earnings,
-    String? total,
-    String? weekRange,
-    String? dailyPay,
-    int? workerCount,
-  }) {
-    return Worker(
-      name: name ?? this.name,
-      groupName: groupName ?? this.groupName,
-      deductions: deductions ?? this.deductions,
-      selectedDays: selectedDays ?? this.selectedDays,
-      earnings: earnings ?? this.earnings,
-      total: total ?? this.total,
-      weekRange: weekRange ?? this.weekRange,
-      dailyPay: dailyPay ?? this.dailyPay,
-      workerCount: workerCount ?? this.workerCount,
-    );
-  }
+@HiveType(typeId: 1)
+class GroupModel extends HiveObject {
+  @HiveField(0)
+  final String groupName;
+  
+  @HiveField(1)
+  List<WorkerModel> workers;
+  
+  @HiveField(2)
+  List<String> paymentHistory;
+  
+  @HiveField(3)
+  String currentDate;
+  
+  @HiveField(4)
+  String currentDay;
+
+  GroupModel({
+    required this.groupName,
+    this.workers = const [],
+    this.paymentHistory = const [],
+    required this.currentDate,
+    required this.currentDay,
+  });
 }

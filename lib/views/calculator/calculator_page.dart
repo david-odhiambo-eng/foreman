@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:foreman/viewModel/data_structure.dart';
 import 'package:foreman/views/home/bottom_navigation.dart';
+import 'package:foreman/models/calculator_operations.dart';
 
 class Calculator extends StatefulWidget {
   const Calculator({super.key});
@@ -10,16 +11,12 @@ class Calculator extends StatefulWidget {
 }
 
 class _CalculatorState extends State<Calculator> {
-  String input = "0";
   String result = "0";
 
   @override
   Widget build(BuildContext context) {
-    final allButtons = [
-      ...DataStructure.specialButtons,
-      ...DataStructure.numbersButtons,
-      ...DataStructure.symbolButtons
-    ];
+    // Correct button arrangement from DataStructure
+    final allButtons = DataStructure.buttonsLayout;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -51,8 +48,11 @@ class _CalculatorState extends State<Calculator> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Input display
                   Text(
-                    input,
+                    CalculatorOperations.myInput.isEmpty
+                        ? '0'
+                        : CalculatorOperations.myInput,
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                       fontSize: 24,
@@ -60,6 +60,7 @@ class _CalculatorState extends State<Calculator> {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  // Result display
                   Text(
                     result,
                     textAlign: TextAlign.right,
@@ -79,9 +80,10 @@ class _CalculatorState extends State<Calculator> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4, // 4 buttons per row
-                    childAspectRatio: 1, 
+                    childAspectRatio: 1,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -97,7 +99,13 @@ class _CalculatorState extends State<Calculator> {
                     return InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
-                        
+                        String newResult =
+                            CalculatorOperations.calculator(btn, setState);
+                        if (newResult.isNotEmpty) {
+                          setState(() {
+                            result = newResult;
+                          });
+                        }
                       },
                       child: Container(
                         decoration: BoxDecoration(
@@ -129,7 +137,7 @@ class _CalculatorState extends State<Calculator> {
           ],
         ),
       ),
-      bottomNavigationBar: const BottomBar(currentIndex: 3,),
+      bottomNavigationBar: const BottomBar(currentIndex: 3),
     );
   }
 }
