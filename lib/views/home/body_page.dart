@@ -2,6 +2,8 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:foreman/models/user_checked_status.dart';
+import 'package:foreman/models/worker_provider.dart';
 import 'package:foreman/viewModel/group_adapter.dart';
 import 'package:foreman/views/home/group_workers.dart';
 import 'package:foreman/views/home/textStyle.dart';
@@ -10,6 +12,7 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 class BodyPage extends StatefulWidget {
   const BodyPage({super.key});
@@ -21,6 +24,7 @@ class BodyPage extends StatefulWidget {
 class _BodyPageState extends State<BodyPage> {
   final TextEditingController groupController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
+  //double total = await Provider.of<GroupStatsProvider>(context).getGroupTotal(groupController.text);
   late Box<Group> groupsBox;
   List<Group> groups = [];
   List<Group> _searchedGroups = [];
@@ -422,119 +426,151 @@ class _BodyPageState extends State<BodyPage> {
     );
   }
 
-  Widget _buildGroupCard({
-    required String groupName,
-    required int checkedWorkers,
-    required int totalWorkers,
-    double progress = 0,
-    required int index,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => GroupMembers(
-              groupName: groupName,
-              day: formatedDate,
-              date: formatedDay,
+Widget _buildGroupCard({
+  required String groupName,
+  required int checkedWorkers,
+  required int totalWorkers,
+  double progress = 0,
+  required int index,
+}) {
+  return FutureBuilder<double>(
+    future: Provider.of<WorkerProvider>(context, listen: false)
+        .getGroupTotal(groupName),
+    builder: (context, snapshot) {
+      final total = snapshot.data ?? 0;
+      
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (BuildContext context) => GroupMembers(
+                groupName: groupName,
+                day: formatedDate,
+                date: formatedDay,
+              ),
             ),
+          );
+        },
+        child: Card(
+          elevation: 5,
+          margin: const EdgeInsets.only(bottom: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-        );
-      },
-      child: Card(
-        elevation: 5,
-        margin: const EdgeInsets.only(bottom: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // group title + edit/delete
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      '$groupName Group',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade800,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Group title + edit/delete
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$groupName Group',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade800,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 20),
-                        color: Colors.blue.shade600,
-                        onPressed: () => _editGroup(index),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 20),
-                        color: Colors.red.shade600,
-                        onPressed: () => _deleteGroup(index),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Row(
-      children: [
-        CircleAvatar(
-          radius: 24, // Bigger than 42x42 for clarity
-          backgroundColor: Colors.blue.shade100,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Padding(
-              padding: const EdgeInsets.all(6.0),
-              child: Text(
-                '$checkedWorkers/$totalWorkers',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue.shade800,
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20),
+                          color: Colors.blue.shade600,
+                          onPressed: () => _editGroup(index),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, size: 20),
+                          color: Colors.red.shade600,
+                          onPressed: () => _deleteGroup(index),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.blue.shade100,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Padding(
+                              padding: const EdgeInsets.all(6.0),
+                              child: Text(
+                                '$checkedWorkers/$totalWorkers',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Workers marked today',
+                            style: reusableStyle1(),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: progress.toDouble(),
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation(Colors.blue.shade400),
+                        minHeight: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Displaying totals for the group
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child:Row(
+                      
+                      children: [
+                        Text(
+                          'Group Totals:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        SizedBox(width: 50,),
+                        Text(
+                          'Ksh ${total.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    )
+                  ],
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            'Workers marked today',
-            style: reusableStyle1(),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    ),
-    const SizedBox(height: 12),
-    ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: LinearProgressIndicator(
-        value: progress.toDouble(),
-        backgroundColor: Colors.grey.shade200,
-        valueColor: AlwaysStoppedAnimation(Colors.blue.shade400),
-        minHeight: 10,
-      ),
-    ),
-  ],
-)
-
-              
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+      );
+    },
+  );
+}
 }

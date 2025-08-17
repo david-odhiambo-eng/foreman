@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:foreman/models/worker_provider.dart';
 import 'package:foreman/views/home/app_bar.dart';
 import 'package:foreman/views/home/body_page.dart';
 import 'package:foreman/views/home/bottom_navigation.dart';
 import 'package:foreman/views/onboarding/sign_in.dart'; // For logout navigation
 import 'package:foreman/models/signup_signin.dart';
+import 'package:provider/provider.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -112,6 +115,11 @@ class _HomeState extends State<Home> {
         ),
       ),
       bottomNavigationBar: BottomBar(currentIndex: 0,),
+      floatingActionButton: FloatingActionButton(onPressed: (){
+        _showMyModalBottomSheet();
+      },
+      child: Icon(FontAwesomeIcons.wallet),
+      ),
     );
   }
 
@@ -155,4 +163,92 @@ class _HomeState extends State<Home> {
       onTap: onTap,
     );
   }
+
+  //helper function for total amount
+  void _showMyModalBottomSheet() {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+    ),
+    builder: (BuildContext context) {
+      return FutureBuilder<double>(
+        future: Provider.of<WorkerProvider>(context, listen: false)
+            .getAllGroupsTotal(),
+        builder: (context, snapshot) {
+          return SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'All Groups Totals',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 20),
+                  
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    const Center(child: CircularProgressIndicator())
+                  else if (snapshot.hasError)
+                    const Text('Error loading totals')
+                  else
+                    Column(
+                      children: [
+                        Card(
+                          elevation: 3,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Grand Total:',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Ksh ${snapshot.data?.toStringAsFixed(2) ?? '0.00'}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  
+                  const Spacer(),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 12),
+                      ),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 }
