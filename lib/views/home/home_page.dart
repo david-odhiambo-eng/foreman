@@ -4,7 +4,6 @@ import 'package:foreman/models/worker_provider.dart';
 import 'package:foreman/views/home/app_bar.dart';
 import 'package:foreman/views/home/body_page.dart';
 import 'package:foreman/views/home/bottom_navigation.dart';
-import 'package:foreman/views/onboarding/sign_in.dart'; // For logout navigation
 import 'package:foreman/models/signup_signin.dart';
 import 'package:provider/provider.dart';
 

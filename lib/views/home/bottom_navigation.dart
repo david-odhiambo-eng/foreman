@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:foreman/views/calculator/calculator_page.dart';
 import 'package:foreman/views/home/home_page.dart';
+import 'package:foreman/views/home/records_page.dart';
 import 'package:foreman/views/jobs/post_jobs.dart';
 
 
@@ -37,7 +38,7 @@ class _BottomBarState extends State<BottomBar> {
         );
         break;
       case 1:
-        // Navigation to Jobs page
+        Navigator.push(context, MaterialPageRoute(builder: (context) => Records()));
         break;
       case 2:
         Navigator.pushReplacement(
@@ -83,7 +84,7 @@ class _BottomBarState extends State<BottomBar> {
             onTap: _onItemTapped,
             items: [
               _buildBarItem(Icons.home, "Home", 0),
-              _buildBarItem(Icons.work, "Jobs", 1),
+              _buildBarItem(Icons.description, "Records", 1),
               _buildBarItem(Icons.add_circle_outline, "Post Job", 2),
               _buildBarItem(FontAwesomeIcons.calculator, "Calculator", 3),
             ],

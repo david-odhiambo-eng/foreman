@@ -2,14 +2,11 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:foreman/models/user_checked_status.dart';
 import 'package:foreman/models/worker_provider.dart';
 import 'package:foreman/viewModel/group_adapter.dart';
 import 'package:foreman/views/home/group_workers.dart';
 import 'package:foreman/views/home/textStyle.dart';
 import 'package:intl/intl.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -24,8 +21,7 @@ class BodyPage extends StatefulWidget {
 class _BodyPageState extends State<BodyPage> {
   final TextEditingController groupController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
-  //double total = await Provider.of<GroupStatsProvider>(context).getGroupTotal(groupController.text);
-  late Box<Group> groupsBox;
+  
   List<Group> groups = [];
   List<Group> _searchedGroups = [];
   DateTime now = DateTime.now();
@@ -35,6 +31,7 @@ class _BodyPageState extends State<BodyPage> {
   // Firebase references
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  late StreamSubscription<QuerySnapshot> _groupsSubscription;
 
   // typing text
   final String _fullText =
@@ -47,17 +44,33 @@ class _BodyPageState extends State<BodyPage> {
   void initState() {
     formatedDate = DateFormat('MMMM d, yyyy').format(now);
     formatedDay = DateFormat('EEEE').format(now);
-    groupsBox = Hive.box<Group>('groups');
-    _loadGroups();
     _startTyping();
+    _setupGroupsListener();
     super.initState();
   }
 
-  void _loadGroups() {
-    setState(() {
-      groups = groupsBox.values.toList();
-      _searchedGroups = groups;
-    });
+  void _setupGroupsListener() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      _groupsSubscription = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('groups')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .listen((snapshot) {
+        setState(() {
+          groups = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return Group(
+              data['name'] ?? '',
+              (data['createdAt'] as Timestamp).toDate(),
+            );
+          }).toList();
+          _searchedGroups = groups;
+        });
+      });
+    }
   }
 
   @override
@@ -65,6 +78,7 @@ class _BodyPageState extends State<BodyPage> {
     groupController.dispose();
     searchController.dispose();
     _typingTimer?.cancel();
+    _groupsSubscription.cancel();
     super.dispose();
   }
 
@@ -253,12 +267,26 @@ class _BodyPageState extends State<BodyPage> {
               ElevatedButton(
                 onPressed: () async {
                   if (groupController.text.trim().isNotEmpty) {
-                    final newGroup = Group(
-                        groupController.text.trim(), DateTime.now());
-                    await groupsBox.add(newGroup);
-                    _loadGroups();
-                    groupController.clear();
-                    Navigator.pop(context);
+                    final user = _auth.currentUser;
+                    if (user != null) {
+                      final groupName = groupController.text.trim();
+                      final newGroup = {
+                        'name': groupName,
+                        'createdAt': DateTime.now(),
+                        'checkedWorkers': 0,
+                        'totalWorkers': 0,
+                      };
+                      
+                      await _firestore
+                          .collection('users')
+                          .doc(user.uid)
+                          .collection('groups')
+                          .doc(groupName)
+                          .set(newGroup);
+                      
+                      groupController.clear();
+                      Navigator.pop(context);
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -278,68 +306,151 @@ class _BodyPageState extends State<BodyPage> {
   }
 
   void _editGroup(int index) {
-    final group = _searchedGroups[index];
-    groupController.text = group.name;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
-        title: const Text("Edit Group"),
-        content: TextField(
-          controller: groupController,
-          decoration: const InputDecoration(
-            hintText: "Enter new group name",
-            border: OutlineInputBorder(),
-          ),
+  final group = _searchedGroups[index];
+  final originalGroupName = group.name;
+  groupController.text = group.name;
+  
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
+      title: const Text("Edit Group"),
+      content: TextField(
+        controller: groupController,
+        decoration: const InputDecoration(
+          hintText: "Enter new group name",
+          border: OutlineInputBorder(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel",
-                style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (groupController.text.isNotEmpty) {
-                final updatedGroup = Group(
-                  groupController.text,
-                  group.createdAt,
-                );
-                await groupsBox.putAt(_getOriginalIndex(index), updatedGroup);
-                _loadGroups();
-                groupController.clear();
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade700,
-            ),
-            child: const Text("Save"),
-          ),
-        ],
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel",
+              style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (groupController.text.isNotEmpty) {
+              final user = _auth.currentUser;
+              if (user != null) {
+                final newGroupName = groupController.text;
+                
+                // Get the old group data
+                final oldGroupDoc = await _firestore
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('groups')
+                    .doc(originalGroupName)
+                    .get();
+                
+                if (oldGroupDoc.exists) {
+                  // Create new group with ALL existing data but new name
+                  final oldData = oldGroupDoc.data() as Map<String, dynamic>;
+                  await _firestore
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('groups')
+                      .doc(newGroupName)
+                      .set({
+                    ...oldData, // Spread all existing data
+                    'name': newGroupName, // Update the name field
+                  });
+                  
+                  // Copy all workers from old group to new group
+                  final workersSnapshot = await _firestore
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('groups')
+                      .doc(originalGroupName)
+                      .collection('workers')
+                      .get();
+                  
+                  // Batch write for efficiency
+                  final batch = _firestore.batch();
+                  
+                  for (var workerDoc in workersSnapshot.docs) {
+                    final newWorkerRef = _firestore
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('groups')
+                        .doc(newGroupName)
+                        .collection('workers')
+                        .doc(workerDoc.id);
+                    
+                    batch.set(newWorkerRef, workerDoc.data());
+                  }
+                  
+                  await batch.commit();
+                  
+                  // Delete old group and its workers
+                  final deleteBatch = _firestore.batch();
+                  
+                  // Delete all workers in old group
+                  for (var workerDoc in workersSnapshot.docs) {
+                    deleteBatch.delete(workerDoc.reference);
+                  }
+                  
+                  // Delete the old group document
+                  deleteBatch.delete(oldGroupDoc.reference);
+                  
+                  await deleteBatch.commit();
+                  
+                  groupController.clear();
+                  Navigator.pop(context);
+                }
+              }
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue.shade700,
+          ),
+          child: const Text("Save"),
+        ),
+      ],
+    ),
+  );
+}
 
   void _deleteGroup(int index) {
+    final group = _searchedGroups[index];
+    final groupName = group.name;
+    final user = _auth.currentUser;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16)),
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: const Text("Delete Group"),
-        content: const Text("Are you sure you want to delete this group?"),
+        content: Text("Are you sure you want to delete the group '$groupName' and all its data?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel",
-                style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
-              await groupsBox.deleteAt(_getOriginalIndex(index));
-              _loadGroups();
+              if (user != null) {
+                final groupRef = _firestore
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('groups')
+                    .doc(groupName);
+
+                // Delete all workers inside this group
+                final workersSnap = await groupRef.collection('workers').get();
+                for (var doc in workersSnap.docs) {
+                  await doc.reference.delete();
+                }
+
+                // Finally delete the group doc itself
+                await groupRef.delete();
+              }
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
@@ -351,11 +462,6 @@ class _BodyPageState extends State<BodyPage> {
         ],
       ),
     );
-  }
-
-  int _getOriginalIndex(int searchedIndex) {
-    final group = _searchedGroups[searchedIndex];
-    return groups.indexWhere((g) => g!.name == group.name);
   }
 
   Widget _buildGroupList() {
@@ -390,9 +496,14 @@ class _BodyPageState extends State<BodyPage> {
       itemBuilder: (context, index) {
         final groupName = _searchedGroups[index].name;
         final user = _auth.currentUser;
+        
+        if (user == null) {
+          return const SizedBox();
+        }
+
         DocumentReference groupDocRef = _firestore
             .collection('users')
-            .doc(user?.uid)
+            .doc(user.uid)
             .collection('groups')
             .doc(groupName);
 
@@ -426,151 +537,150 @@ class _BodyPageState extends State<BodyPage> {
     );
   }
 
-Widget _buildGroupCard({
-  required String groupName,
-  required int checkedWorkers,
-  required int totalWorkers,
-  double progress = 0,
-  required int index,
-}) {
-  return FutureBuilder<double>(
-    future: Provider.of<WorkerProvider>(context, listen: false)
-        .getGroupTotal(groupName),
-    builder: (context, snapshot) {
-      final total = snapshot.data ?? 0;
-      
-      return GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (BuildContext context) => GroupMembers(
-                groupName: groupName,
-                day: formatedDate,
-                date: formatedDay,
-              ),
-            ),
-          );
-        },
-        child: Card(
-          elevation: 5,
-          margin: const EdgeInsets.only(bottom: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Group title + edit/delete
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '$groupName Group',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue.shade800,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 20),
-                          color: Colors.blue.shade600,
-                          onPressed: () => _editGroup(index),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, size: 20),
-                          color: Colors.red.shade600,
-                          onPressed: () => _deleteGroup(index),
-                        ),
-                      ],
-                    ),
-                  ],
+  Widget _buildGroupCard({
+    required String groupName,
+    required int checkedWorkers,
+    required int totalWorkers,
+    double progress = 0,
+    required int index,
+  }) {
+    return FutureBuilder<double>(
+      future: Provider.of<WorkerProvider>(context, listen: false)
+          .getGroupTotal(groupName),
+      builder: (context, snapshot) {
+        final total = snapshot.data ?? 0;
+        
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (BuildContext context) => GroupMembers(
+                  groupName: groupName,
+                  day: formatedDate,
+                  date: formatedDay,
                 ),
-                const SizedBox(height: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 24,
-                          backgroundColor: Colors.blue.shade100,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Padding(
-                              padding: const EdgeInsets.all(6.0),
-                              child: Text(
-                                '$checkedWorkers/$totalWorkers',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue.shade800,
+              ),
+            );
+          },
+          child: Card(
+            elevation: 5,
+            margin: const EdgeInsets.only(bottom: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Group title + edit/delete
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$groupName Group',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade800,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 20),
+                            color: Colors.blue.shade600,
+                            onPressed: () => _editGroup(index),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 20),
+                            color: Colors.red.shade600,
+                            onPressed: () => _deleteGroup(index),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: Colors.blue.shade100,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Padding(
+                                padding: const EdgeInsets.all(6.0),
+                                child: Text(
+                                  '$checkedWorkers/$totalWorkers',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade800,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Workers marked today',
-                            style: reusableStyle1(),
-                            overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Workers marked today',
+                              style: reusableStyle1(),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: progress.toDouble(),
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation(Colors.blue.shade400),
-                        minHeight: 10,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Displaying totals for the group
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child:Row(
-                      
-                      children: [
-                        Text(
-                          'Group Totals:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[700],
-                          ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progress.toDouble(),
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: AlwaysStoppedAnimation(Colors.blue.shade400),
+                          minHeight: 10,
                         ),
-                        SizedBox(width: 50,),
-                        Text(
-                          'Ksh ${total.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade800,
-                            fontSize: 16,
-                          ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Displaying totals for the group
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            Text(
+                              'Group Totals:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(width: 50),
+                            Text(
+                              'Ksh ${total.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green.shade800,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    )
-                  ],
-                ),
-              ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 }

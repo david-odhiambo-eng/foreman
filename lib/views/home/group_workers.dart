@@ -559,8 +559,7 @@ class _GroupMembersState extends State<GroupMembers> {
       }
       await batch.commit();
     } catch (e) {
-      // You had a Text widget here; leaving silent to avoid setState in async method.
-      // Handle as needed.
+      
     }
   }
 

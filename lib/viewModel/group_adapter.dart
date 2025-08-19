@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
 
-part 'group_adapter.g.dart';
+
 
 @HiveType(typeId: 0)
 class Group {
