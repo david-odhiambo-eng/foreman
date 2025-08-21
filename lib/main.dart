@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:foreman/firebase_options.dart';
+import 'package:foreman/models/providers/notes_provider.dart';
+import 'package:foreman/models/providers/purchases_provider.dart';
+import 'package:foreman/models/providers/totals_tools_provider.dart';
 import 'package:foreman/models/worker_provider.dart';
 
 
@@ -25,7 +28,10 @@ class Foreman extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => WorkerProvider())
+        ChangeNotifierProvider(create: (context) => WorkerProvider()),
+        ChangeNotifierProvider(create: (context) => ToolsProvider()),
+        ChangeNotifierProvider(create: (context) => NotesProvider()),
+        ChangeNotifierProvider(create: (context) => PurchasesProvider()),
       ],
       child: MaterialApp(
         home: AuthWrapper(),
