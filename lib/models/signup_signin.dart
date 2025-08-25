@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -6,6 +7,7 @@ import 'package:foreman/views/onboarding/splash_screen.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     // Optional clientId (required for web)
     // clientId: 'your-client-id.apps.googleusercontent.com',
@@ -182,6 +184,39 @@ class AuthService {
       _showMessage(context, 'Error signing out. Please try again.');
     }
   }
+//adding username to firestore
+  Future<void> addUsername(String username) async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  await firestore.collection('users').doc(user.uid).set({
+    'uid': user.uid,
+    'username': username,
+    'email': user.email,
+    'createdAt': FieldValue.serverTimestamp(),
+  }, SetOptions(merge: true)); // merge prevents overwriting other fields
+}
+
+//getting the username
+Future<String> getUsernameForUser() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user == null) return 'User';
+
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+  DocumentSnapshot doc = await firestore.collection('users').doc(user.uid).get();
+
+  if (doc.exists && doc.data() != null) {
+    return doc['username'] ?? 'No username found';
+  } else {
+    return 'No username found';
+  }
+}
+
+
+
+
 
   // HELPERS
   

@@ -6,6 +6,7 @@ import 'package:foreman/views/home/body_page.dart';
 import 'package:foreman/views/home/bottom_navigation.dart';
 import 'package:foreman/models/signup_signin.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -30,7 +31,7 @@ class _HomeState extends State<Home> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Header with user info
-                const DrawerHeader(
+                DrawerHeader(
                   decoration: BoxDecoration(
                     color: Colors.blue,
                   ),
@@ -44,16 +45,14 @@ class _HomeState extends State<Home> {
                         child: Icon(Icons.person, size: 40, color: Colors.blue),
                       ),
                       SizedBox(height: 10),
+                      FutureBuilder(
+                        future: _authService.getUsernameForUser(), 
+                        builder: (context, snapshot){
+                          if(!snapshot.hasData) return CircularProgressIndicator();
+                          return Text('Hello ${snapshot.data}');
+                        }),
                       Text(
-                        'Welcome, User!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'user@example.com',
+                        _getUserInfo(),
                         style: TextStyle(color: Colors.white70),
                       ),
                     ],
@@ -250,4 +249,17 @@ class _HomeState extends State<Home> {
     },
   );
 }
+
+//getting user info
+String _getUserInfo() {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // User is signed in
+        return user.email ?? 'No email found';
+      } else {
+        // No user is signed in
+        return 'No user found';
+      }
+    }
 }

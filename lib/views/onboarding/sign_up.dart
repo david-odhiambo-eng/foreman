@@ -7,10 +7,11 @@ import 'package:foreman/views/onboarding/sign_in.dart';
 class SignUp extends StatelessWidget {
   SignUp({super.key});
   final authService = AuthService();
+  final usernameController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    final usernameController = TextEditingController();
+    
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
@@ -89,6 +90,8 @@ class SignUp extends StatelessWidget {
                                   confirmPassword: confirmPasswordController.text
                                   );
 
+                                  await authService.addUsername(usernameController.text);
+
                                 
 
                               },
@@ -162,6 +165,7 @@ class SignUp extends StatelessWidget {
   Widget _googleButton(BuildContext context){
     return ElevatedButton(onPressed: ()async{
       await authService.signInWithGoogle(context);
+      await authService.addUsername(usernameController.text);
     }, 
     style: ElevatedButton.styleFrom(
       backgroundColor: Colors.blue,
